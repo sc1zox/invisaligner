@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- AppTheme.green -->
+    <color name="ic_launcher_background">#356B57</color>
+    <!-- AppTheme.background; the app is light-only, so the launch screen is too. -->
+    <color name="launch_background">#F7F7F2</color>
+</resources>
