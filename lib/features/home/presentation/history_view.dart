@@ -29,6 +29,7 @@ class HistoryView extends StatelessWidget {
     final entries = tracker.pauses.where(
       (pause) => pause.overlapsDay(selected),
     );
+    final belowGoal = tracker.isBelowDailyWearGoal(selected, now);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -99,7 +100,8 @@ class HistoryView extends StatelessWidget {
             const SizedBox(height: 8),
             Text(
               hoursText(tracker.wornOn(selected, now)),
-              style: Theme.of(context).textTheme.headlineLarge,
+              style: Theme.of(context).textTheme.headlineLarge
+                  ?.copyWith(color: belowGoal ? AppTheme.amber : null),
             ),
             Text(
               'Tragezeit${selected == dayOf(now) ? ' bisher' : ''} · Ziel ${dailyWearGoal.inHours} Stunden',
@@ -252,6 +254,10 @@ class _WeekChartState extends State<_WeekChart> {
           crossAxisAlignment: CrossAxisAlignment.end,
           children: days.map((day) {
             final tracked = widget.tracker.tracksDay(day);
+            final belowGoal = widget.tracker.isBelowDailyWearGoal(
+              day,
+              widget.now,
+            );
             final hours =
                 widget.tracker.wornOn(day, widget.now).inSeconds /
                 Duration.secondsPerHour;
@@ -267,7 +273,9 @@ class _WeekChartState extends State<_WeekChart> {
                   child: Container(
                     decoration: BoxDecoration(
                       color: day == widget.selected
-                          ? AppTheme.softGreen
+                          ? belowGoal
+                                ? AppTheme.softAmber
+                                : AppTheme.softGreen
                           : Colors.transparent,
                       borderRadius: BorderRadius.circular(12),
                     ),
@@ -280,7 +288,13 @@ class _WeekChartState extends State<_WeekChart> {
                               ? '${hours.toStringAsFixed(1).replaceAll('.', ',')} h'
                               : '–',
                           textAlign: TextAlign.center,
-                          style: const TextStyle(fontSize: 10),
+                          style: TextStyle(
+                            fontSize: 10,
+                            color: belowGoal ? AppTheme.amber : null,
+                            fontWeight: belowGoal
+                                ? FontWeight.w700
+                                : FontWeight.normal,
+                          ),
                         ),
                         const SizedBox(height: 6),
                         SizedBox(
@@ -299,7 +313,9 @@ class _WeekChartState extends State<_WeekChart> {
                                 heightFactor: (hours / scaleHours).clamp(0, 1),
                                 child: Container(
                                   decoration: BoxDecoration(
-                                    color: day == widget.selected
+                                    color: belowGoal
+                                        ? AppTheme.amber
+                                        : day == widget.selected
                                         ? AppTheme.ink
                                         : AppTheme.green,
                                     borderRadius: BorderRadius.circular(8),

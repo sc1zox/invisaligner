@@ -12,6 +12,7 @@ class Tracker {
 
   List<PauseInterval> get pauses => _pauses;
   Tray? get current => _trays.lastOrNull;
+  Tray? get previous => _trays.length > 1 ? _trays[_trays.length - 2] : null;
   DateTime? get firstDay => _trays.firstOrNull?.start;
   PauseInterval? get activePause {
     for (final pause in _pauses) {
@@ -84,19 +85,49 @@ class Tracker {
     return worn.isNegative ? Duration.zero : worn;
   }
 
-  bool isSkipped(DateTime day, DateTime now) =>
-      dayOf(day).isBefore(dayOf(now)) && wornOn(day, now) == Duration.zero;
+  /// A running day is deliberately excluded: before midnight its wear time is
+  /// incomplete and would otherwise create a misleading deficit every morning.
+  bool isBelowDailyWearGoal(DateTime day, DateTime now) {
+    final date = dayOf(day);
+    return tracksDay(date) &&
+        date.isBefore(dayOf(now)) &&
+        wornOn(date, now) < dailyWearGoal;
+  }
+
+  /// Adds up only shortfalls below the daily goal for the current tray.
+  /// Extra wear on another day does not erase a day that missed its goal.
+  Duration currentTrayWearDeficit(DateTime now) {
+    final tray = current;
+    if (tray == null) return Duration.zero;
+
+    var deficit = Duration.zero;
+    for (
+      var date = dayOf(tray.start);
+      date.isBefore(dayOf(now));
+      date = nextDay(date)
+    ) {
+      final worn = wornOn(date, now);
+      if (worn < dailyWearGoal) deficit += dailyWearGoal - worn;
+    }
+    return deficit;
+  }
 
   DateTime? plannedChange(DateTime now) {
     final tray = current;
     if (tray == null) return null;
     var date = tray.start;
-    var countedDays = 0;
-    while (countedDays < daysPerTray) {
-      if (!isSkipped(date, now)) countedDays++;
+    for (var day = 0; day < daysPerTray; day++) {
       date = nextDay(date);
     }
     return date;
+  }
+
+  DateTime? suggestedChange(DateTime now) {
+    final planned = plannedChange(now);
+    if (planned == null || currentTrayWearDeficit(now) == Duration.zero) {
+      return null;
+    }
+    return nextDay(planned);
   }
 
   Future<void> stamp() async {
@@ -148,6 +179,37 @@ class Tracker {
         'number': number,
         'start': day.millisecondsSinceEpoch,
       });
+    });
+    await _reload();
+  }
+
+  /// Corrects a change that was tracked late or with the wrong number.
+  Future<void> updateCurrentTray(int number, DateTime start) async {
+    final day = dayOf(start);
+    if (number <= 0 || day.isAfter(dayOf(DateTime.now()))) {
+      throw const FormatException(
+        'Bitte eine gültige Schienennummer und einen bisherigen Tag wählen.',
+      );
+    }
+    await _db.transaction((txn) async {
+      final rows = await txn.query('trays', orderBy: 'start DESC', limit: 2);
+      if (rows.isEmpty) {
+        throw const FormatException('Bitte zuerst deine Schiene einrichten.');
+      }
+      if (rows.length == 2) {
+        final previous = Tray.fromRow(rows.last);
+        if (!day.isAfter(previous.start) || number <= previous.number) {
+          throw const FormatException(
+            'Die Schiene muss nach der vorherigen beginnen und eine höhere Nummer haben.',
+          );
+        }
+      }
+      await txn.update(
+        'trays',
+        {'number': number, 'start': day.millisecondsSinceEpoch},
+        where: 'id = ?',
+        whereArgs: [Tray.fromRow(rows.first).id],
+      );
     });
     await _reload();
   }

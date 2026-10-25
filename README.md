@@ -33,12 +33,19 @@ Eine offene Pause bleibt auch nach einem App-Neustart erhalten.
 - Ohne eingetragene Pause zählt die gesamte verfügbare Tageszeit als getragen.
   Nicht gestempelte Pausen müssen deshalb nachgetragen werden.
 - Das Tagesziel beträgt 20 Stunden. Der Wechsel ist nach 14 Tragetagen ab dem
-  ersten Tragetag geplant. Abgeschlossene Tage mit 0 Stunden Tragezeit werden
-  angehängt; Tage mit weniger als 20 Stunden zählen weiterhin.
+  ersten Tragetag geplant. Unterschreitungen des Tagesziels werden für die
+  aktuelle Schiene aufsummiert; sobald ein Defizit besteht, schlägt die App
+  einen zusätzlichen Tag bis zum Wechsel vor. Mehr als 20 Stunden an einem
+  anderen Tag gleichen ein Defizit nicht aus.
 - **Tag anrechnen** überschreibt die Anrechnung für den Wechseltermin,
   nicht die Zeitwerte. Nachträge berechnen den Termin der aktuellen Schiene neu.
-- Ein bestätigter Schienenwechsel beginnt am heutigen Kalendertag.
-  Eine offene Pause bleibt bis zum Einsetzstempel bestehen.
+- Ein bestätigter Schienenwechsel beginnt standardmäßig am heutigen
+  Kalendertag. Wurde der Wechsel vergessen, lässt sich im Wechseldialog der
+  tatsächliche Tag wählen. Eine offene Pause bleibt bis zum Einsetzstempel
+  bestehen.
+- **Wechsel korrigieren** auf der Schienenkarte ändert Nummer und Starttag der
+  aktuellen Schiene, etwa wenn der Wechsel zu spät eingetragen wurde. Der
+  Starttag muss nach dem Start der vorherigen Schiene liegen.
 
 ## Code
 

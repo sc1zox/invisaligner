@@ -15,6 +15,7 @@ class TodayView extends StatelessWidget {
     required this.onStamp,
     required this.onEditPause,
     required this.onChangeTray,
+    required this.onCorrectTray,
     super.key,
   });
 
@@ -23,6 +24,7 @@ class TodayView extends StatelessWidget {
   final VoidCallback? onStamp;
   final VoidCallback? onEditPause;
   final VoidCallback? onChangeTray;
+  final VoidCallback? onCorrectTray;
 
   @override
   Widget build(BuildContext context) {
@@ -31,6 +33,8 @@ class TodayView extends StatelessWidget {
     final active = tracker.activePause;
     final remaining = dailyWearGoal - worn;
     final change = tracker.plannedChange(now)!;
+    final deficit = tracker.currentTrayWearDeficit(now);
+    final suggestedChange = tracker.suggestedChange(now);
     final due = !dayOf(now).isBefore(change);
     final tray = tracker.current!;
     final reached = remaining <= Duration.zero;
@@ -207,6 +211,34 @@ class TodayView extends StatelessWidget {
                   fontWeight: FontWeight.w600,
                 ),
               ),
+              if (suggestedChange != null) ...[
+                const SizedBox(height: 14),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.08),
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        '${hoursText(deficit)} im Verzug',
+                        style: const TextStyle(
+                          color: AppTheme.lime,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        'Vorgeschlagen: ${longDateText(suggestedChange)}',
+                        style: const TextStyle(color: Colors.white),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
               if (due) ...[
                 const SizedBox(height: 18),
                 SizedBox(
@@ -225,6 +257,14 @@ class TodayView extends StatelessWidget {
                   ),
                 ),
               ],
+              const SizedBox(height: 8),
+              Center(
+                child: TextButton(
+                  style: TextButton.styleFrom(foregroundColor: AppTheme.lime),
+                  onPressed: onCorrectTray,
+                  child: const Text('Wechsel korrigieren'),
+                ),
+              ),
             ],
           ),
         ),

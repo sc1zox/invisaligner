@@ -9,9 +9,9 @@ import '../tracker_models.dart';
 import 'formatters.dart';
 import 'history_view.dart';
 import 'pause_dialog.dart';
-import 'setup_dialog.dart';
 import 'today_view.dart';
 import 'tracker_widgets.dart';
+import 'tray_dialog.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -109,11 +109,11 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  Future<void> _setup() async {
+  Future<void> _editTray(TrayDialogMode mode) async {
     await showDialog<bool>(
       context: context,
       barrierDismissible: false,
-      builder: (context) => SetupDialog(tracker: _tracker!),
+      builder: (context) => TrayDialog(tracker: _tracker!, mode: mode),
     );
     _refresh();
   }
@@ -126,33 +126,6 @@ class _HomeScreenState extends State<HomeScreen> {
           PauseDialog(tracker: _tracker!, day: _selected, pause: pause),
     );
     _refresh();
-  }
-
-  Future<void> _changeTray() async {
-    final tracker = _tracker!;
-    final number = tracker.current!.number + 1;
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Schiene wechseln?'),
-        content: Text(
-          'Schiene $number startet heute mit $daysPerTray neuen Tragetagen. Eine offene Pause bleibt bestehen, bis du das Einsetzen stempelst.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Abbrechen'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('Wechsel bestätigen'),
-          ),
-        ],
-      ),
-    );
-    if (confirmed == true && mounted) {
-      await _perform(() => tracker.startTray(number, DateTime.now()));
-    }
   }
 
   void _select(DateTime date) {
@@ -281,7 +254,8 @@ class _HomeScreenState extends State<HomeScreen> {
                             SizedBox(
                               width: double.infinity,
                               child: FilledButton.icon(
-                                onPressed: _setup,
+                                onPressed: () =>
+                                    _editTray(TrayDialogMode.setup),
                                 icon: const Icon(Icons.arrow_forward_rounded),
                                 label: const Text('Schiene einrichten'),
                               ),
@@ -301,7 +275,12 @@ class _HomeScreenState extends State<HomeScreen> {
                           onEditPause: _busy
                               ? null
                               : () => _editPause(tracker.activePause),
-                          onChangeTray: _busy ? null : _changeTray,
+                          onChangeTray: _busy
+                              ? null
+                              : () => _editTray(TrayDialogMode.change),
+                          onCorrectTray: _busy
+                              ? null
+                              : () => _editTray(TrayDialogMode.correct),
                         )
                       else
                         HistoryView(
